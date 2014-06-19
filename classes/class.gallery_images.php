@@ -3,11 +3,19 @@ defined('_VALID_CALL') || (header("HTTP/1.1 403 Forbidden") & die('403.14 - Dire
 
 class gallery_images extends default_class 
 {
-	public function getImagesForGallery($galleryId, $limit = 50, $limitstart = 0){
+	public function getImagesForGallery($galleryId, $limit = 50, $limitstart = 0, $orderBy = 'ordering', $orderDir = 'ASC', $conditions = array()){
 		global $db;
-		$gallery_image = new gallery_image();
 		
-		$r = $db->_getData($gallery_image->getDBTable(), array('id'), "gallery_id=".$galleryId, $limit, $limitstart);
+		
+		$gallery_image = new gallery_image();
+		$cond = "gallery_id=".$galleryId;
+		
+		if(is_array($conditions)){
+			foreach($conditions as $field => $value){
+				$cond.=" AND ".$field."=".$value."";
+			}
+		}
+		$r = $db->_getData($gallery_image->getDBTable(), array('id'), $cond, $limit, $limitstart, $orderBy, $orderDir);
 		
 		$images = array();
 		foreach($r as $c){
@@ -24,7 +32,7 @@ class gallery_images extends default_class
 		
 		$images = $this->getImagesForGallery($galleryId, $limit, $limitstart);
 		foreach($images as $image){
-			$xmlImages->appendChild($image->getXML($dom));
+			$xmlImages->appendChild($image->get('main', $dom));
 		}
 		
 		return $xmlImages;

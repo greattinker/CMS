@@ -24,7 +24,7 @@ class contents extends default_class
 		
 		$contents = $this->getAllContents($limit, $limitstart);
 		foreach($contents as $content){
-			$xmlContents->appendChild($content->getXMLHead($dom));
+			$xmlContents->appendChild($content->get('head', $dom));
 		}
 		
 		return $xmlContents;

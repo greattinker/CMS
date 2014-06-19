@@ -24,7 +24,7 @@ class galleries extends default_class
 		
 		$galleries = $this->getGalleries($limit, $limitstart);
 		foreach($galleries as $gallery){
-			$xmlGalleries->appendChild($gallery->getXMLHead($dom));
+			$xmlGalleries->appendChild($gallery->get('head', $dom));
 		}
 		
 		return $xmlGalleries;
