@@ -56,6 +56,11 @@ class dbHandler {
 		$this->_DbDatabase = $DbDatabase;
 	} //__construct()
 	
+	
+	function _getConn(){
+		$mysqli = mysqli_connect($this->_DbHost, $this->_DbUser, $this->_DbPassword, $this->_DbDatabase);
+		return $mysqli;
+	}
 	/**
 	 * Daten updaten
 	 * @param string $TableName Tabellen-Name
@@ -71,13 +76,13 @@ class dbHandler {
 		
 		// foreach ($sql_values as $colvalue) {$colvalues.= $colvalue.",";}
 		//_d($sql_values);
-		foreach ($sql_values as $key => $colvalue) {$colvalues.=  $key."=".$colvalue.",";}
+		foreach ($sql_values as $key => $colvalue) {$colvalues.=  $key."='".$colvalue."',";}
 		if ($colvalues) {
 			$colvalues = substr($colvalues, 0, mb_strlen($colvalues)-1);
 		} else {return;}
 		$SqlQuery = "UPDATE " .$TableName . " SET " .$colvalues;
 		if ($requirement != '') $SqlQuery .= " WHERE " .$requirement;
-
+		
 		$updated = $mysqli->query($SqlQuery);
 
 		$this->_query = $SqlQuery;
@@ -119,6 +124,37 @@ class dbHandler {
 	
 	} //_setData()
 	
+	/**
+	 * Funktion zur Abfrage von Daten
+	 * @param string $tablename Tabellen-Name
+	 * @param Array $sql_colname_array ('spalte'=>wert, ...)
+	 * @param string $requirement Bedingungen (spalte='1' OR spalte=2)
+	 * @param bool $single einzelnes Ergenis (nicht verwendet)
+	 * @return Array $arrReturn
+	 */
+	function _getColumns($tablename) {
+
+		$mysqli = new mysqli($this->_DbHost, $this->_DbUser, $this->_DbPassword, $this->_DbDatabase);
+		$mysqli->set_charset("utf8");
+		
+		$arrReturn = array();
+
+		
+		$query = "SHOW COLUMNS FROM " .$tablename;
+		
+		$this->_query = $query;
+		
+		$result1 = $mysqli->query($query);
+		$this->_lastError = $mysqli->error;
+		if (!empty($this->_lastError)) trigger_error($this->_lastError, E_USER_WARNING);
+		if ($result1) {
+			while ($row = $result1->fetch_assoc()) {
+				$arrReturn[] = $row['Field'];
+			}			
+		}
+		return $arrReturn;
+	}
+	
 		
 	/**
 	 * Funktion zur Abfrage von Daten
@@ -128,7 +164,7 @@ class dbHandler {
 	 * @param bool $single einzelnes Ergenis (nicht verwendet)
 	 * @return Array $arrReturn
 	 */
-	function _getData($tablename, $sql_colname_array, $requirement='', $limit = 0, $limitstart = 0) {
+	function _getData($tablename, $sql_colname_array, $requirement='', $limit = 0, $limitstart = 0, $orderBy = '', $orderDir = '') {
 
 		$mysqli = new mysqli($this->_DbHost, $this->_DbUser, $this->_DbPassword, $this->_DbDatabase);
 		$mysqli->set_charset("utf8");
@@ -140,14 +176,16 @@ class dbHandler {
 		if($requirement!='') {$requirement = " WHERE ".$requirement. "";}
 		$limits = '';
 		if($limit > 0){$limits = 'LIMIT '.$limitstart.', '.$limit.' ';}
-		$query = "SELECT " .substr($colnames, 0, -2) ." FROM " .$tablename ." " .$requirement ." ".$limits;
+		$order = '';
+		if($orderBy != '' && ($orderDir == 'ASC' || $orderDir == 'DESC')){ $order = ' ORDER BY '.$orderBy.' '.$orderDir.' ';}
+		$query = "SELECT " .substr($colnames, 0, -2) ." FROM " .$tablename ." " .$requirement ." ".$order.$limits;
 		
 #		echo $query;
 		$this->_query = $query;
 		
 		$result1 = $mysqli->query($query);
 		$this->_lastError = $mysqli->error;
-		if (!empty($this->_lastError)) trigger_error($this->_lastError, E_USER_WARNING);
+#		if (!empty($this->_lastError)) trigger_error($this->_lastError, E_USER_WARNING);
 		if ($result1) {
 			while ($row = $result1->fetch_assoc()) {
 				$arrReturn[] = $row;

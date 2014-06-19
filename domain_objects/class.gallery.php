@@ -16,9 +16,14 @@ class gallery extends default_domain_object
 	protected $modified;
 	protected $modified_by;
 	
-	public function __construct($id = 0, $loadFromDB = true){
-		$this->dbTable = 'mos_rsgallery2_galleries';
+	protected $images = array();
+	
+	public function __construct($id = 0, $loadFromDB = true, $limit = 50, $limitstart = 0, $orderBy = 'ordering', $orderDir = 'ASC', $conditions = array()){
+		$this->dbTable = TABLE_GALLERIES;
 		parent::__construct($id, $loadFromDB);
+		
+		$gallery_images = new gallery_images();
+		$this->images = $gallery_images->getImagesForGallery($this->id, $limit, $limitstart, $orderBy, $orderDir, $conditions);
 	}
 	
 	public function getName(){ return $this->name;}
@@ -35,7 +40,7 @@ class gallery extends default_domain_object
 	public function getParams(){ return $this->params;}
 	public function getCountImages(){ return 0; }
 	
-	function getXML($dom = '', $limit = 50, $limitstart = 0){		
+	function getXML($dom = ''){		
 		if($dom == '')
 			$dom = new DOMDocument('1.0', 'utf-8');
 		$xml = $dom->createElement('gallery');
@@ -53,13 +58,12 @@ class gallery extends default_domain_object
 		$xml->appendChild($dom->createElement('params', $this->getParams()));
 		$xml->appendChild($dom->createElement('ordering', $this->getOrdering()));
 		$xml->appendChild($dom->createElement('number_images', $this->getCountImages()));
-		$xml->appendChild($dom->createElement('limit', $limit));
-		$xml->appendChild($dom->createElement('limitstart', $limitstart));
 		
 		
-		$gallery_images = new gallery_images();
-		$xmlImages = $xml->appendChild($gallery_images->getAllImagesForGalleryXML($this->id, $dom, $limit, $limitstart));
-		
+		$xmlImages = $xml->appendChild($dom->createElement('images'));
+		foreach($this->images as $image){
+			$xmlImages->appendChild($image->getXML($dom));
+		}
 		
 		
 		return $xml;
@@ -86,6 +90,84 @@ class gallery extends default_domain_object
 		
 		
 		return $xml;
+	}
+	
+	public function specialSettings(){
+		$dir = _GALLERIES_ROOT_PATH.$this->id;
+		if (!is_dir($dir)) {
+			mkdir($dir, 0777);
+		}
+	}
+	
+	public function importZipfile(){
+#		$this->upload();
+#		$zip=zip_open($this->directory.'/'.$_POST['gallery_id'].'/'.$_FILES['image']['name']);
+#		if (is_resource($zip)) {
+#		  while ($zip_entry = zip_read($zip)) {
+#			$fp = fopen($this->directory.'/'.$_POST['gallery_id'].'/'.zip_entry_name($zip_entry), "w");
+#			if (zip_entry_open($zip, $zip_entry, "r")) {
+#			  $buf = zip_entry_read($zip_entry, zip_entry_filesize($zip_entry));
+#			  fwrite($fp,"$buf");
+#			  zip_entry_close($zip_entry);
+#			  fclose($fp);
+#			  chmod($this->directory.'/'.$_POST[gallery_id].'/'.zip_entry_name($zip_entry),0777);
+#			image::thumbnail($this->directory.'/'.$_POST[gallery_id].'/'.zip_entry_name($zip_entry), $this->directory.'/'.$_POST["gallery_id"].'/th_'.zip_entry_name($zip_entry), $GLOBALS['config_gallery_thumbnail_width'], $GLOBALS['config_gallery_thumbnail_height'], True);
+#			chmod($this->directory.'/'.$_POST["gallery_id"].'/th_'.zip_entry_name($zip_entry),0777);
+#			   $ordering=mysql_fetch_array(mysql_query("SELECT * from mos_rsgallery2_files WHERE gallery_id='".$_POST['gallery_id']."' ORDER BY ordering DESC LIMIT 1"));
+#		if($this->entrycheck(array(),array(array('gallery_id',$_POST['gallery_id']),array('name',zip_entry_name($zip_entry)),array('title',$this->getimagetitle(zip_entry_name($zip_entry))),array('date',date("Y-m-d H:i:s",time())),array('userid',$this->userid),array('approved','1'),array('published','1'),array('ordering',($ordering[ordering]+1)),array('descr','')))=='true'){
+#		$data=new com_gallery_files_data($this->id,$this->itemid);
+#		$data->getdata();
+#		}
+#			}
+#		  }//while
+#		  zip_close($zip);
+#		  unlink($this->directory.'/'.$_POST['gallery_id'].'/'.$_FILES['image']['name']);
+#		}//if
+
+	}
+	
+	
+	public function setParams($params = array()){
+		if(count($params) == 0) return false;
+		
+		foreach($params as $key=>$value){
+			switch($key){
+				case 'name':
+				case 'state':
+				case 'parent':
+				case 'date':
+				case 'params':
+				case 'ordering':
+				case 'description':
+					if($value != '')
+						$this->{$key} = $value;
+					break;
+				default:
+					break;
+			}
+		}
+		
+	}
+	
+	public function updateParams($params = array()){
+		if(count($params) == 0) return false;
+		
+		foreach($params as $key=>$value){
+			switch($key){
+				case 'name':
+				case 'state':
+				case 'parent':
+				case 'date':
+				case 'params':
+				case 'ordering':
+				case 'description':
+					if($value != '')
+						$this->{$key} = $value;
+					break;
+				default:
+					break;
+			}
+		}
 	}
 }
 ?>

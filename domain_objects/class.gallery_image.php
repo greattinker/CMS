@@ -20,7 +20,7 @@ class gallery_image extends default_domain_object
 	protected $modified_by;
 	
 	public function __construct($id = 0, $loadFromDB = true){
-		$this->dbTable = 'mos_rsgallery2_files';
+		$this->dbTable = TABLE_GALLERY_IMAGES;
 		parent::__construct($id, $loadFromDB);
 	}
 	
@@ -69,6 +69,81 @@ class gallery_image extends default_domain_object
 	
 	function getXMLHead($dom = ''){		
 		return $this->getXML($dom);
+	}
+	
+	
+	public function uploadImage(){
+#		print_r($_FILE);
+		$this->update(array('filename' => basename($_FILES['image']['name'])));
+#		$this->filename = $_FILE['image']['name'];
+		
+		$target_path = _GALLERIES_ROOT_PATH.$this->gallery_id.'/';
+		$target_path = $target_path . $this->getFilename();
+		
+		$this->uploadFile('image', $target_path);
+#		chmod(_GALLERIES_ROOT_PATH.$this->getGalleryId().'/'.$this->getFilename(), 0777);
+		
+		image::thumbnail(	_GALLERIES_ROOT_PATH.$this->getGalleryId().'/'.$this->getFilename(),
+							_GALLERIES_ROOT_PATH.$this->getGalleryId().'/th_'.$this->getFilename(), 
+							_GALLERIES_THUMBNAIL_WIDTH, 
+							_GALLERIES_THUMBNAIL_HEIGHT, 
+							True);
+						
+		chmod(_GALLERIES_ROOT_PATH.$this->getGalleryId().'/th_'.$this->getFilename(), 0777);
+	}
+	
+	
+	
+	public function setParams($params = array()){
+		if(count($params) == 0) return false;
+		
+		foreach($params as $key=>$value){
+			switch($key){
+				case 'title':
+				case 'state':
+				case 'gallery_id':
+				case 'params':
+				case 'ordering':
+				case 'description':
+				case 'filename':
+					if($value != '')
+						$this->{$key} = $value;
+					break;
+				default:
+					break;
+			}
+		}
+		
+		
+	}
+	
+	public function updateParams($params = array()){
+		if(count($params) == 0) return false;
+		
+		foreach($params as $key=>$value){
+			switch($key){
+				case 'title':
+				case 'state':
+				case 'gallery_id':
+				case 'params':
+				case 'ordering':
+				case 'description':
+				case 'filename':
+					if($value != '')
+						$this->{$key} = $value;
+					break;
+				default:
+					break;
+			}
+		}
+	}
+	
+	protected function specialActionsDelete(){
+		$target_path = _GALLERIES_ROOT_PATH.$this->gallery_id.'/';
+		$target_path_th = $target_path .'th_'. $this->getFilename();
+		$target_path_image = $target_path . $this->getFilename();
+		if(file_exists($target_path_image)) unlink($target_path_image);
+		if(file_exists($target_path_th)) unlink($target_path_th);
 	}
 }
 ?>
